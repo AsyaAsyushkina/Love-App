@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
+import androidx.room.util.copy
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -116,23 +117,37 @@ fun DetailsScreen(addCounter: () -> Unit, finalCount: Int, addHeart: (Float, Flo
             // АНИМАТОР: Двигает все сердечки каждый кадр
             LaunchedEffect(Unit) {
                 while (true) {
+//                    withFrameMillis {
+//                        val iterator = listFly.iterator()
+//                        while (iterator.hasNext()) {
+//                            val heart = iterator.next()
+//
+//                            // Обновляем координаты
+//                            heart.x += heart.vx
+//                            heart.y += heart.vy
+//
+//
+//                            // Если вылетело за экран или стало прозрачным — удаляем
+//                            if (heart.x < -100 || heart.x > maxWidth.value + 100 ||
+//                                heart.y < -100 || heart.y > maxHeight.value + 100
+//                            ) {
+//                                iterator.remove()
+//                            }
+//                        }
+//                    }
                     withFrameMillis {
-                        val iterator = listFly.iterator()
-                        while (iterator.hasNext()) {
-                            val heart = iterator.next()
+                        // Используем обычный цикл for с индексом, чтобы менять элементы по индексу
+                        for (i in listFly.indices) {
+                            val heart = listFly[i]
+                            val newX = heart.x + heart.vx
+                            val newY = heart.y + heart.vy
 
-                            // Обновляем координаты
-                            heart.x += heart.vx
-                            heart.y += heart.vy
-
-
-                            // Если вылетело за экран или стало прозрачным — удаляем
-                            if (heart.x < -100 || heart.x > maxWidth.value + 100 ||
-                                heart.y < -100 || heart.y > maxHeight.value + 100
-                            ) {
-                                iterator.remove()
-                            }
+                            // .copy() создает новый объект, и Compose видит обновление!
+                            listFly[i] = heart.copy(x = newX, y = newY)
                         }
+
+                        // Удаляем те, что вылетели (лучше делать отдельной строкой раз в кадр)
+                        listFly.removeAll { it.x < -100 || it.x > maxWidth.value + 100 || it.y < -100 || it.y > maxHeight.value + 100 }
                     }
                 }
             }

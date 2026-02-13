@@ -1,6 +1,6 @@
 package com.example.loveapp
 
-class HeartFly(
+data class HeartFly(
     val id: Long,
     var x: Float,
     var y: Float,
