@@ -3,32 +3,38 @@ package com.example.loveapp // Убедитесь, что ваш package сов�
 
 import android.annotation.SuppressLint
 import android.media.MediaPlayer
-import androidx.compose.runtime.*
-import androidx.compose.material.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
-import androidx.room.util.copy
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.random.Random
+
 
 val countHeart = 20
 val speed = 2
@@ -39,25 +45,50 @@ val speed = 2
 // remember сохраняет плеер, чтобы он не пересоздавался
 
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun StartScreen(onNavigate: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    val interactionSource = remember { MutableInteractionSource()}
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scaleAnimation"
+    )
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF9AD6FE))
     ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
 
-        Image(
-            bitmap = ImageBitmap.imageResource(id = R.drawable.konvert_close),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .wrapContentHeight()
-                .clickable { onNavigate() },
-            contentScale = ContentScale.FillWidth,
-            filterQuality = FilterQuality.None
-        )
+            Image(
+                bitmap = ImageBitmap.imageResource(id = R.drawable.konvert_close),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .wrapContentHeight()
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale
+                    )
+                    .clickable(
 
+                        interactionSource = interactionSource,
+                        indication = null
+
+                    ) { onNavigate() },
+                contentScale = ContentScale.FillWidth,
+                filterQuality = FilterQuality.None
+            )
+
+        }
     }
 }
 
@@ -77,10 +108,25 @@ fun isValidPosition(x: Float, y: Float, listHeart: List<HeartPosition>): Boolean
 }
 
 @Composable
-fun DetailsScreen(addCounter: () -> Unit, finalCount: Int, addHeart: (Float, Float) -> Unit, listHeart: List<HeartPosition>, listFly: MutableList<HeartFly>) {
+fun DetailsScreen(
+    addCounter: () -> Unit,
+    finalCount: Int,
+    addHeart: (Float, Float) -> Unit,
+    listHeart: List<HeartPosition>,
+    listFly: MutableList<HeartFly>,
+    decreaseCounter: () -> Unit
+) {
     val imageHeart = ImageBitmap.imageResource(R.drawable.heart)
     var envelopeImage = ImageBitmap.imageResource(id = R.drawable.konvert_open)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scaleAnimation"
+    )
     if(listHeart.size >= countHeart) {
         when(finalCount){
         0 -> envelopeImage = ImageBitmap.imageResource(id = R.drawable.konvert_letter)
@@ -94,9 +140,12 @@ fun DetailsScreen(addCounter: () -> Unit, finalCount: Int, addHeart: (Float, Flo
 
     }
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF9AD6FE))
+
     ){
-        if(finalCount > 4) {
+        if(finalCount > 2) {
             LaunchedEffect(Unit) {
                 while (true) {
                     val angle =
@@ -177,6 +226,18 @@ fun DetailsScreen(addCounter: () -> Unit, finalCount: Int, addHeart: (Float, Flo
                 filterQuality = FilterQuality.None
             )
         }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp) // Высота активной зоны
+                .align(Alignment.BottomCenter) // Прижимаем к низу
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null // Чтобы не было видно нажатия
+                ) {
+                    decreaseCounter() // Твоя логика
+                }
+        )
         Column(
         modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -189,7 +250,15 @@ fun DetailsScreen(addCounter: () -> Unit, finalCount: Int, addHeart: (Float, Flo
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .wrapContentHeight()
-                    .clickable {
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale
+                    )
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
+
                         if(listHeart.size >= countHeart){
                             addCounter()
                         }
@@ -260,7 +329,8 @@ fun SimpleApp() {
                                },
                     listHeart = heartPositions,
                     listFly = heartFlyPositions,
-                    addCounter = { counter++ }
+                    addCounter = {if(counter < 5) counter++ },
+                    decreaseCounter = { if(counter > 0) counter--}
                 )
             }
         }
